@@ -14,15 +14,21 @@ namespace steamboat
 	public partial class MainWindow : Window
 	{
 		Steam steam = new Steam();
-		public List<SteamAccount> AccountList = new List<SteamAccount>();
+		public List<SteamAccount> AccountList;
+        Database _db;
 
 		public MainWindow()
 		{
 			InitializeComponent();
 			CheckSteam();
 			steam.CheckPath();
-            Crypto.GetNewEntropy();
-		}
+
+            _db = new Database();
+            AccountList = _db.GetAllAccounts();
+            Listbox_Accounts.ItemsSource = AccountList;
+            Listbox_Accounts.DisplayMemberPath = "Alias";
+
+        }
 
 		private void button_KillSteam_Click(object sender, RoutedEventArgs e)
 		{
@@ -48,9 +54,18 @@ namespace steamboat
 
 		public void NewAccount(SteamAccount account)
 		{
-			AccountList.Add(account);
-			Listbox_Accounts.Items.Add(account.Name);
+            if (_db.AddAccount(account))
+            {
+                AccountList.Add(account);
+                Listbox_Accounts.Items.Add(account.Alias);
+            }
+            // else: NewAccount failed because same-name account already exists
 		}
+
+        public void UpdateAccount(SteamAccount account)
+        {
+            var isSuccessful = _db.UpdateAccount(account);
+        }
 
 		private void ListBox_NewAccount(object sender, RoutedEventArgs e)
 		{
@@ -67,7 +82,7 @@ namespace steamboat
 		private void Listbox_Accounts_Delete(object sender, RoutedEventArgs e)
 		{
 			MessageBoxResult result = MessageBox.Show("Are you sure?", 
-				string.Format("Delete {0}?", AccountList[Listbox_Accounts.SelectedIndex].Name),
+				string.Format("Delete {0}?", AccountList[Listbox_Accounts.SelectedIndex].Alias),
 				MessageBoxButton.YesNo);
 
 			if (result == MessageBoxResult.Yes)

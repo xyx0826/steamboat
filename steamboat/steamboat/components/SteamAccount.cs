@@ -1,57 +1,61 @@
 ﻿using steamboat.Utils;
 using System;
 using System.Security;
+using SQLite;
 
 namespace steamboat.components
 {
     public class SteamAccount
     {
-        public string Name { get; set; }
+        public string Alias { get; set; }
+        [PrimaryKey]
         public string Username { get; set; }
 
+        [Ignore]
         public byte[] Iv { get; set; }
+        [Ignore]
         public SecureString SecurePassword { get; set; }
 
-        public SteamAccount()
-        {
-            Iv = Crypto.GetNewEntropy();
-        }
+        public string EncodedIv { get; set; }
+        public string EncodedPassword { get; set; }
 
+        public SteamAccount() { }
+
+        /// <summary>
+        /// Creates a SteamAccount, not specifying an account alias.
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="password"></param>
         public SteamAccount(string username, SecureString password)
         {
-            Name = username;
+            Alias = username;
             Username = username;
             SecurePassword = password;
-            Iv = Crypto.GetNewEntropy();
-        }
-
-        public SteamAccount(string name, string username, SecureString password)
-        {
-            Name = name;
-            Username = username;
-            SecurePassword = password;
-            Iv = Crypto.GetNewEntropy();
-        }
-
-        public string EncryptedPassword
-        {
-            get
-            {
-                // use the random iv to encrypt the password
-                return Crypto.EncryptString(SecurePassword, Iv);
-            }
+            EncryptCredentials();
         }
 
         /// <summary>
-        /// Base64 encoded IV.
-        /// Be sure to store this - need original IV to decrypt password
+        /// Creates a SteamAccount with a specified alias.
         /// </summary>
-        public string EncodedIv
+        /// <param name="name"></param>
+        /// <param name="username"></param>
+        /// <param name="password"></param>
+        public SteamAccount(string name, string username, SecureString password)
         {
-            get
-            {
-                return Convert.ToBase64String(Iv);
-            }
+            Alias = name;
+            Username = username;
+            SecurePassword = password;
+            EncryptCredentials();
+        }
+
+        /// <summary>
+        /// Sets up encryption; yields IV and encrypted password.
+        /// </summary>
+        void EncryptCredentials()
+        {
+            Iv = Crypto.GetNewEntropy();
+            EncodedIv = Convert.ToBase64String(Iv);
+            EncodedPassword = Crypto.EncryptString(SecurePassword, Iv);
         }
 
         /// <summary>
@@ -62,7 +66,7 @@ namespace steamboat.components
             get
             {
                 // use the original iv to decrypt the password
-                return Crypto.DecryptString(EncryptedPassword, Iv);
+                return Crypto.DecryptString(EncodedPassword, Iv);
             }
         }
     }

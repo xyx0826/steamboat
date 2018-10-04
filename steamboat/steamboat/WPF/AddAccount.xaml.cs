@@ -16,7 +16,7 @@ namespace steamboat.WPF
 
         private void button_add_Click(object sender, RoutedEventArgs e)
         {
-            if (TestString(tb_username.Text) && TestString(passwordBox.Password.ToString()))
+            if (TestString(tb_username.Text) && passwordBox.SecurePassword != null)
             {
                 SteamAccount Account = new SteamAccount(tb_username.Text, passwordBox.SecurePassword);
                 ((MainWindow)Application.Current.MainWindow).NewAccount(Account);
@@ -28,9 +28,13 @@ namespace steamboat.WPF
             }
         }
 
+        /// <summary>
+        /// Only allow alphanumerics and spaces.
+        /// </summary>
+        /// <param name="str">String to be tested.</param>
+        /// <returns>Validity of specified string.</returns>
         private bool TestString(string str)
         {
-            // Only allow alphanumerics and spaces
             return Regex.IsMatch(str, @"^[A-Za-z0-9\s@]*$");
         }
     }
