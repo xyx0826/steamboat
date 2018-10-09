@@ -1,9 +1,12 @@
 ﻿using steamboat.components;
 using steamboat.Utils;
 using steamboat.WPF;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace steamboat
@@ -14,21 +17,15 @@ namespace steamboat
 	public partial class MainWindow : Window
 	{
 		Steam steam = new Steam();
-		public List<SteamAccount> AccountList;
-        Database _db;
+		public List<SteamAccount> AccountList = new List<SteamAccount>();
 
 		public MainWindow()
 		{
 			InitializeComponent();
 			CheckSteam();
 			steam.CheckPath();
-
-            _db = new Database();
-            AccountList = _db.GetAllAccounts();
-            Listbox_Accounts.ItemsSource = AccountList;
-            Listbox_Accounts.DisplayMemberPath = "Alias";
-
-        }
+			Crypto.GetNewEntropy();
+		}
 
 		private void button_KillSteam_Click(object sender, RoutedEventArgs e)
 		{
@@ -54,18 +51,9 @@ namespace steamboat
 
 		public void NewAccount(SteamAccount account)
 		{
-            if (_db.AddAccount(account))
-            {
-                AccountList.Add(account);
-                Listbox_Accounts.Items.Add(account.Alias);
-            }
-            // else: NewAccount failed because same-name account already exists
+			AccountList.Add(account);
+			Listbox_Accounts.Items.Add(account.Name);
 		}
-
-        public void UpdateAccount(SteamAccount account)
-        {
-            var isSuccessful = _db.UpdateAccount(account);
-        }
 
 		private void ListBox_NewAccount(object sender, RoutedEventArgs e)
 		{
@@ -76,13 +64,28 @@ namespace steamboat
 
 		private void Listbox_Accounts_MouseDoubleClick(object sender, RoutedEventArgs e)
 		{
-			MessageBox.Show("Switching accounts not yet implemented.");
+			if (steam.IsRunning())
+			{
+				steam.Kill();
+				Thread.Sleep(200);
+			}
+
+			var listBoxItem = VisualTreeHelpers.FindParent<ListBoxItem>((DependencyObject) e.OriginalSource);
+
+			if (listBoxItem == null)
+			{
+				throw new InvalidOperationException("ListBoxItem not found");
+			}
+
+			var account = AccountList.First(ac => ac.Username.Equals((string) listBoxItem.Content));
+
+			steam.Run(account.Username, account.DecryptedPassword);
 		}
 
 		private void Listbox_Accounts_Delete(object sender, RoutedEventArgs e)
 		{
 			MessageBoxResult result = MessageBox.Show("Are you sure?", 
-				string.Format("Delete {0}?", AccountList[Listbox_Accounts.SelectedIndex].Alias),
+				string.Format("Delete {0}?", AccountList[Listbox_Accounts.SelectedIndex].Name),
 				MessageBoxButton.YesNo);
 
 			if (result == MessageBoxResult.Yes)

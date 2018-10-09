@@ -78,6 +78,7 @@
     <Compile Include="Utils\Crypto.cs" />
     <Compile Include="Utils\Database.cs" />
     <Compile Include="Utils\Extensions.cs" />
+    <Compile Include="Utils\VisualTreeHelper.cs" />
     <Compile Include="WPF\AddAccount.xaml.cs">
       <DependentUpon>AddAccount.xaml</DependentUpon>
     </Compile>
